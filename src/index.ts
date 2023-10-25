@@ -106,7 +106,7 @@ const bytesCoder = new Coders.BytesCoder("bytes");
 const stringCoder = new Coders.StringCoder("string");
 
 function encodeReply(reply: [number, number, string, string]): HexString {
-  return Coders.encode([uintCoder, stringCoder, stringCoder], reply) as HexString;
+  return Coders.encode([uintCoder, uintCoder, stringCoder, stringCoder], reply) as HexString;
 }
 
 // Defined in OracleConsumerContract.sol
@@ -252,15 +252,14 @@ function checkCityStr(city: string): any {
   if (SUPPORTED_CITIES[cityStr]) {
     return cityStr
   } else {
-    console.log(`City: ${city} not supported`);
-    throw Error.BadRequestString;
+    console.log(`City: ${city} not supported...defaulting to Dallas`);
+    return "Dallas";
   }
 }
 
 
 function fetchWeatherApi(apiUrl: string, city: string): any {
-  checkCityStr(city);
-  const weatherFormat = '?format={"name":"%l","description":"Weather+in+%l","external_url":"https://weather-mojo.4everland.store/%l/weather.json","image":"%x","attributes":[{"trait_type":"timestamp","value":"%T"},{"trait_type":"city","value":"%l"},{"trait_type":"weather","value":"%c%C"}]}';
+  const weatherFormat = '?format={"name":"%l","description":"Weather+in+%l","external_url":"https://wrlx-bucket.4everland.store/%l/weather.json","image":"%x","attributes":[{"trait_type":"timestamp","value":"%T"},{"trait_type":"city","value":"%l"},{"trait_type":"weather","value":"%c%C"}]}';
   const httpUrl = `${apiUrl}${city}${weatherFormat}`;
   let headers = {
     "Content-Type": "application/json",

@@ -31,7 +31,7 @@ contract OracleConsumerContract is PhatRollupAnchor, Ownable {
         address sender = msg.sender;
         // assemble the request
         uint id = nextRequest;
-        requests[id] = reqData;
+        requests[id] = city;
         requestsByUsers[id] = sender;
         _pushMessage(abi.encode(id, city));
         nextRequest += 1;

@@ -13,7 +13,7 @@ async function main() {
   ])
 
   console.log('Pushing a request...');
-  await consumer.connect(deployer).request("0x8221");
+  await consumer.connect(deployer).request("GrandJunction");
   console.log('Done');
 }
 

@@ -247,10 +247,10 @@ function parseReqStr(hexStr: string): string {
 }
 
 function checkCityStr(city: string): any {
-  var cityStr = city.toString();
+  console.log(city);
   // @ts-ignore
-  if (SUPPORTED_CITIES[cityStr]) {
-    return cityStr
+  if (SUPPORTED_CITIES[city]) {
+    return city
   } else {
     console.log(`City: ${city} not supported...defaulting to Dallas`);
     return "Dallas";
@@ -342,11 +342,12 @@ export default function main(request: HexString, secrets: string): HexString {
     console.info("Malformed request received");
     return encodeReply([TYPE_ERROR, 0, "malform request", error as Error]);
   }
-  const cityStr = checkCityStr(encodedReqStr as string);
+  const cityStr = parseReqStr(encodedReqStr as string);
+  checkCityStr(cityStr);
   console.log(`Request received for city ${cityStr}`);
 
   try {
-    const resp = fetchWeatherApi("https://wttr.in/", "Dallas");
+    const resp = fetchWeatherApi("https://wttr.in/", cityStr);
     // @ts-ignore
     const imageURI = WEATHER_SYMBOL_PLAIN[resp.image];
     console.log(imageURI);
@@ -354,7 +355,7 @@ export default function main(request: HexString, secrets: string): HexString {
     console.log(nftUri);
     resp.image = imageURI;
     console.log(resp);
-    updateS3Storage(cityStr, nftUri);
+    updateS3Storage(cityStr, JSON.stringify(resp));
     // const respData = fetchApiStats(secrets, cityStr);
     // let stats = respData.data.profile.stats.totalPosts;
     console.log("response:", [TYPE_RESPONSE, requestId, cityStr, nftUri]);

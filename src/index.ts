@@ -179,59 +179,6 @@ function stringToHex(str: string): string {
   return "0x" + hex;
 }
 
-function fetchApiStats(apiUrl: string, reqStr: string): any {
-  // reqStr should be any valid hex string
-  let headers = {
-    "Content-Type": "application/json",
-    "User-Agent": "phat-contract",
-  };
-  let query = JSON.stringify({
-    query: `query Profile {
-            profile(request: { profileId: \"${reqStr}\" }) {
-                stats {
-                    totalFollowers
-                    totalFollowing
-                    totalPosts
-                    totalComments
-                    totalMirrors
-                    totalPublications
-                    totalCollects
-                }
-            }
-        }`,
-  });
-  let body = stringToHex(query);
-  //
-  // In Phat Contract runtime, we not support async/await, you need use `pink.batchHttpRequest` to
-  // send http request. The Phat Contract will return an array of response.
-  //
-  let response = pink.batchHttpRequest(
-    [
-      {
-        url: apiUrl,
-        method: "POST",
-        headers,
-        body,
-        returnTextBody: true,
-      },
-    ],
-    10000 // Param for timeout in milliseconds. Your Phat Contract script has a timeout of 10 seconds
-  )[0]; // Notice the [0]. This is important bc the `pink.batchHttpRequest` function expects an array of up to 5 HTTP requests.
-  if (response.statusCode !== 200) {
-    console.log(
-      `Fail to read Lens api with status code: ${response.statusCode}, error: ${
-        response.error || response.body
-      }}`
-    );
-    throw Error.FailedToFetchData;
-  }
-  let respBody = response.body;
-  if (typeof respBody !== "string") {
-    throw Error.FailedToDecode;
-  }
-  return JSON.parse(respBody);
-}
-
 function parseReqStr(hexStr: string): string {
   var hex = hexStr.toString();
   if (!isHexString(hex)) {
@@ -259,7 +206,7 @@ function checkCityStr(city: string): any {
 
 
 function fetchWeatherApi(apiUrl: string, city: string): any {
-  const weatherFormat = '?format={"name":"%l","description":"Weather+in+%l","external_url":"https://wrlx-bucket.4everland.store/%l/weather.json","image":"%x","attributes":[{"trait_type":"timestamp","value":"%T"},{"trait_type":"city","value":"%l"},{"trait_type":"weather","value":"%c%C"}]}';
+  const weatherFormat = '?format={"name":"%l","description":"Weather+in+%l","external_url":"https://wrlx-bucket.4everland.store/%l/weather.json","image":"%x","attributes":[{"trait_type":"timestamp","value":"%T+%Z"},{"trait_type":"city","value":"%l"},{"trait_type":"weather","value":"%C+%t"}]}';
   const httpUrl = `${apiUrl}${city}${weatherFormat}`;
   let headers = {
     "Content-Type": "application/json",

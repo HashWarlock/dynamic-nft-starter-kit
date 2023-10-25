@@ -13,7 +13,7 @@ async function main() {
   ])
 
   console.log('Pushing a request...');
-  await consumer.connect(deployer).request("GrandJunction");
+  await consumer.connect(deployer).request("Dallas");
   console.log('Done');
 }
 

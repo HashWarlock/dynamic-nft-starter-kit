@@ -271,14 +271,6 @@ function fetchWeatherApi(apiUrl: string, city: string): any {
     headers,
     returnTextBody: true,
   });
-  if (response.statusCode !== 200) {
-    console.log(
-        `Fail to read Lens api with status code: ${response.statusCode}, error: ${
-            response.body
-        }}`
-    );
-    throw Error.FailedToFetchData;
-  }
   let respBody = response.body;
   if (typeof respBody !== "string") {
     throw Error.FailedToDecode;
@@ -288,6 +280,7 @@ function fetchWeatherApi(apiUrl: string, city: string): any {
 }
 
 function updateS3Storage(city: string, metadata: string) {
+  console.log(metadata)
   let uint8Array = new Uint8Array(metadata.length);
   for (let i = 0; i < metadata.length; i++) {
     uint8Array[i] = metadata.charCodeAt(i);

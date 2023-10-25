@@ -2,15 +2,20 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./interfaces/ITokenERC721.sol";
 import "./PhatRollupAnchor.sol";
 
 contract OracleConsumerContract is PhatRollupAnchor, Ownable {
-    event ResponseReceived(uint reqId, string reqData, uint256 value);
-    event ErrorReceived(uint reqId, string reqData, uint256 errno);
+    event MintSucceeded(uint256 nftId);
+    event ErrorMintFail(string err);
+    event ResponseReceived(uint reqId, string reqData, string city);
+    event ErrorReceived(uint reqId, string reqData, string errno);
 
     uint constant TYPE_RESPONSE = 0;
     uint constant TYPE_ERROR = 2;
 
+    mapping(uint => address) public requestsByUsers;
+    ITokenERC721 WeatherMojoNfts = ITokenERC721(0x494b46B3527C376d6A0A36d193ebD05dd9Ed7965);
     mapping(uint => string) requests;
     uint nextRequest = 1;
 
@@ -22,11 +27,13 @@ contract OracleConsumerContract is PhatRollupAnchor, Ownable {
         _grantRole(PhatRollupAnchor.ATTESTOR_ROLE, phatAttestor);
     }
 
-    function request(string calldata reqData) public {
+    function request(string memory city) public {
+        address sender = msg.sender;
         // assemble the request
         uint id = nextRequest;
         requests[id] = reqData;
-        _pushMessage(abi.encode(id, reqData));
+        requestsByUsers[id] = sender;
+        _pushMessage(abi.encode(id, city));
         nextRequest += 1;
     }
 
@@ -41,16 +48,28 @@ contract OracleConsumerContract is PhatRollupAnchor, Ownable {
     function _onMessageReceived(bytes calldata action) internal override {
         // Optional to check length of action
         // require(action.length == 32 * 3, "cannot parse action");
-        (uint respType, uint id, uint256 data) = abi.decode(
+        (uint respType, uint id, string memory city, string memory nftUri) = abi.decode(
             action,
-            (uint, uint, uint256)
+            (uint, uint, string, string)
         );
         if (respType == TYPE_RESPONSE) {
-            emit ResponseReceived(id, requests[id], data);
+            emit ResponseReceived(id, requests[id], city);
+            address requester = requestsByUsers[id];
+            try WeatherMojoNfts.mintTo(requester, nftUri) returns (uint256 nftId) {
+                emit ResponseReceived(id, requests[id], nftUri);
+                emit MintSucceeded(nftId);
+                delete requests[id];
+                delete requestsByUsers[id];
+            } catch Error(string memory error) {
+                emit ErrorMintFail(error);
+                delete requests[id];
+                delete requestsByUsers[id];
+            }
             delete requests[id];
         } else if (respType == TYPE_ERROR) {
-            emit ErrorReceived(id, requests[id], data);
+            emit ErrorReceived(id, requests[id], nftUri);
             delete requests[id];
+            delete requestsByUsers[id];
         }
     }
 }

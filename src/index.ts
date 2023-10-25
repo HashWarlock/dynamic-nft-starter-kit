@@ -7,6 +7,52 @@ import { Coders } from "@phala/ethers";
 
 type HexString = `0x${string}`
 
+import {
+  WalkerImpl,
+  createTupleEncoder,
+  encodeStr,
+  decodeStr,
+  encodeU8,
+  decodeU8,
+  createVecEncoder,
+  createVecDecoder,
+  createTupleDecoder,
+} from '@scale-codec/core';
+
+type Tuple = [string, string, string, string, number[]]
+type GetTuple = [string, string, string, string]
+
+const encodeS3Put = createTupleEncoder<Tuple>([
+  encodeStr,
+  encodeStr,
+  encodeStr,
+  encodeStr,
+  createVecEncoder(encodeU8),
+])
+
+const encodeS3Get = createTupleEncoder<GetTuple>([
+  encodeStr,
+  encodeStr,
+  encodeStr,
+  encodeStr,
+])
+
+const decodeS3Put = createTupleDecoder<Tuple>([
+  decodeStr,
+  decodeStr,
+  decodeStr,
+  decodeStr,
+  createVecDecoder(decodeU8),
+])
+
+const decodeS3Get = createTupleDecoder<GetTuple>([
+  decodeStr,
+  decodeStr,
+  decodeStr,
+  decodeStr,
+])
+
+
 // ETH ABI Coders available
 /*
 // Basic Types
@@ -57,9 +103,10 @@ const uintArrayCoder = new Coders.ArrayCoder(uintCoder, 10, "uint256");
 
 const uintCoder = new Coders.NumberCoder(32, false, "uint256");
 const bytesCoder = new Coders.BytesCoder("bytes");
+const stringCoder = new Coders.StringCoder("string");
 
-function encodeReply(reply: [number, number, number]): HexString {
-  return Coders.encode([uintCoder, uintCoder, uintCoder], reply) as HexString;
+function encodeReply(reply: [number, number, string, string]): HexString {
+  return Coders.encode([uintCoder, stringCoder, stringCoder], reply) as HexString;
 }
 
 // Defined in OracleConsumerContract.sol
@@ -86,6 +133,37 @@ function errorToCode(error: Error): number {
     default:
       return 0;
   }
+}
+
+const WEATHER_SYMBOL_PLAIN = {
+  "?": "https://ipfs.apillon.io/ipfs/QmV5apTs4snioxEFj5YmhipNpLgjGNk6hcgJj5vEcK7oxv",
+  "mm": "https://ipfs.apillon.io/ipfs/QmNYBmQKvfEnAnGRbhTdZ8XxAp9BDpvCnWqS1VkKTzFy1S",
+  "=": "https://ipfs.apillon.io/ipfs/QmNYBmQKvfEnAnGRbhTdZ8XxAp9BDpvCnWqS1VkKTzFy1S",
+  "///": "https://ipfs.apillon.io/ipfs/QmVUDR7JosCXj2XXBax6rTiJu42vhSv3HSMNaj458ogxxN",
+  "//": "https://ipfs.apillon.io/ipfs/QmVUDR7JosCXj2XXBax6rTiJu42vhSv3HSMNaj458ogxxN",
+  "**": "https://ipfs.apillon.io/ipfs/QmbofYJo4PyVfckuqQAiPnBRsZ1mL5yo7SfFH8c1TqwhGH",
+  "*/*": "https://ipfs.apillon.io/ipfs/QmbofYJo4PyVfckuqQAiPnBRsZ1mL5yo7SfFH8c1TqwhGH",
+  "/": "https://ipfs.apillon.io/ipfs/QmVUDR7JosCXj2XXBax6rTiJu42vhSv3HSMNaj458ogxxN",
+  ".": "https://ipfs.apillon.io/ipfs/QmVUDR7JosCXj2XXBax6rTiJu42vhSv3HSMNaj458ogxxN",
+  "x": "https://ipfs.apillon.io/ipfs/QmVUDR7JosCXj2XXBax6rTiJu42vhSv3HSMNaj458ogxxN",
+  "x/": "https://ipfs.apillon.io/ipfs/QmbofYJo4PyVfckuqQAiPnBRsZ1mL5yo7SfFH8c1TqwhGH",
+  "*": "https://ipfs.apillon.io/ipfs/QmbofYJo4PyVfckuqQAiPnBRsZ1mL5yo7SfFH8c1TqwhGH",
+  "*/": "https://ipfs.apillon.io/ipfs/QmbofYJo4PyVfckuqQAiPnBRsZ1mL5yo7SfFH8c1TqwhGH",
+  "m": "https://ipfs.apillon.io/ipfs/QmV5apTs4snioxEFj5YmhipNpLgjGNk6hcgJj5vEcK7oxv",
+  "o": "https://ipfs.apillon.io/ipfs/QmV5apTs4snioxEFj5YmhipNpLgjGNk6hcgJj5vEcK7oxv",
+  "/!/": "https://ipfs.apillon.io/ipfs/QmVUDR7JosCXj2XXBax6rTiJu42vhSv3HSMNaj458ogxxN",
+  "!/": "https://ipfs.apillon.io/ipfs/QmVUDR7JosCXj2XXBax6rTiJu42vhSv3HSMNaj458ogxxN",
+  "*!*": "https://ipfs.apillon.io/ipfs/QmbofYJo4PyVfckuqQAiPnBRsZ1mL5yo7SfFH8c1TqwhGH",
+  "mmm": "https://ipfs.apillon.io/ipfs/QmNYBmQKvfEnAnGRbhTdZ8XxAp9BDpvCnWqS1VkKTzFy1S",
+}
+
+const SUPPORTED_CITIES = {
+  "Dallas": true,
+  "Yakutsk": true,
+  "Sidney": true,
+  "Aomori": true,
+  "GrandJunction": true,
+  "MexicoCity": true,
 }
 
 function isHexString(str: string): boolean {
@@ -168,6 +246,76 @@ function parseReqStr(hexStr: string): string {
   return str;
 }
 
+function checkCityStr(city: string): any {
+  var cityStr = city.toString();
+  // @ts-ignore
+  if (SUPPORTED_CITIES[cityStr]) {
+    return cityStr
+  } else {
+    console.log(`City: ${city} not supported`);
+    throw Error.BadRequestString;
+  }
+}
+
+
+function fetchWeatherApi(apiUrl: string, city: string): any {
+  checkCityStr(city);
+  const weatherFormat = '?format={"name":"%l","description":"Weather+in+%l","external_url":"https://weather-mojo.4everland.store/%l/weather.json","image":"%x","attributes":[{"trait_type":"timestamp","value":"%T"},{"trait_type":"city","value":"%l"},{"trait_type":"weather","value":"%c%C"}]}';
+  const httpUrl = `${apiUrl}${city}${weatherFormat}`;
+  let headers = {
+    "Content-Type": "application/json",
+    "User-Agent": "phat-contract",
+  };
+  let response = pink.httpRequest({
+    url: httpUrl,
+    method: "GET",
+    headers,
+    returnTextBody: true,
+  });
+  if (response.statusCode !== 200) {
+    console.log(
+        `Fail to read Lens api with status code: ${response.statusCode}, error: ${
+            response.body
+        }}`
+    );
+    throw Error.FailedToFetchData;
+  }
+  let respBody = response.body;
+  if (typeof respBody !== "string") {
+    throw Error.FailedToDecode;
+  }
+  console.log(respBody);
+  return JSON.parse(respBody);
+}
+
+function updateS3Storage(city: string, metadata: string) {
+  let uint8Array = new Uint8Array(metadata.length);
+  for (let i = 0; i < metadata.length; i++) {
+    uint8Array[i] = metadata.charCodeAt(i);
+  }
+  const endpoint = 'endpoint.4everland.co'
+  const region = 'us-west-1'
+  const bucket = 'wrlx-bucket'
+  const object_key = `${city}/weather.json`;
+  const value = uint8Array;
+  const bytes = WalkerImpl.encode([
+    endpoint,
+    region,
+    bucket,
+    object_key,
+    Array.from(value)
+  ], encodeS3Put)
+  const decoded = WalkerImpl.decode(bytes, decodeS3Put)
+  console.info(`input decoded: ${decoded}`)
+  console.log(bytes);
+  const delegateOutput = pink.invokeContract({
+    callee:
+        "0x6295f7139ce955037419c444341f29e5ccc7a1e2165d6ca8591a4c401fb37abe",
+    selector: 0xa2cb64e1,
+    input: bytes,
+  });
+  console.log(`output: ${delegateOutput}`);
+}
 
 //
 // Here is what you need to implemented for Phat Contract, you can customize your logic with
@@ -193,23 +341,32 @@ export default function main(request: HexString, secrets: string): HexString {
     [requestId, encodedReqStr] = Coders.decode([uintCoder, bytesCoder], request);
   } catch (error) {
     console.info("Malformed request received");
-    return encodeReply([TYPE_ERROR, 0, errorToCode(error as Error)]);
+    return encodeReply([TYPE_ERROR, 0, "malform request", error as Error]);
   }
-  const parsedHexReqStr = parseReqStr(encodedReqStr as string);
-  console.log(`Request received for profile ${parsedHexReqStr}`);
+  const cityStr = checkCityStr(encodedReqStr as string);
+  console.log(`Request received for city ${cityStr}`);
 
   try {
-    const respData = fetchApiStats(secrets, parsedHexReqStr);
-    let stats = respData.data.profile.stats.totalPosts;
-    console.log("response:", [TYPE_RESPONSE, requestId, stats]);
-    return encodeReply([TYPE_RESPONSE, requestId, stats]);
+    const resp = fetchWeatherApi("https://wttr.in/", "Dallas");
+    // @ts-ignore
+    const imageURI = WEATHER_SYMBOL_PLAIN[resp.image];
+    console.log(imageURI);
+    const nftUri = resp.external_url;
+    console.log(nftUri);
+    resp.image = imageURI;
+    console.log(resp);
+    updateS3Storage(cityStr, nftUri);
+    // const respData = fetchApiStats(secrets, cityStr);
+    // let stats = respData.data.profile.stats.totalPosts;
+    console.log("response:", [TYPE_RESPONSE, requestId, cityStr, nftUri]);
+    return encodeReply([TYPE_RESPONSE, requestId, cityStr, nftUri]);
   } catch (error) {
     if (error === Error.FailedToFetchData) {
       throw error;
     } else {
       // otherwise tell client we cannot process it
-      console.log("error:", [TYPE_ERROR, requestId, error]);
-      return encodeReply([TYPE_ERROR, requestId, errorToCode(error as Error)]);
+      console.log("error:", [TYPE_ERROR, requestId, cityStr, error as Error]);
+      return encodeReply([TYPE_ERROR, requestId, cityStr, error as Error]);
     }
   }
 }

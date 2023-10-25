@@ -28,9 +28,25 @@ const config: HardhatUserConfig = {
       url: process.env.MUMBAI_RPC_URL ?? '',
       accounts: [DEPLOYER_PRIVATE_KEY],
     },
+    zkEvm: {
+      chainId: 1442,
+      // If not set, you can get your own Alchemy API key at https://dashboard.alchemyapi.io or https://infura.io
+      url: process.env.MUMBAI_RPC_URL ?? '',
+      accounts: [DEPLOYER_PRIVATE_KEY],
+    },
   },
   etherscan: {
     apiKey: POLYGONSCAN_API_KEY,
+    customChains: [
+      {
+        network: "zkEvm",
+        chainId: 1442,
+        urls: {
+          apiURL:"https://rpc.public.zkevm-test.net",
+          browserURL: "https://testnet-zkevm.polygonscan.com"
+        }
+      }
+    ]
   },
 };
 

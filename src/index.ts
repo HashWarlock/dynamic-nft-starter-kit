@@ -206,7 +206,7 @@ function checkCityStr(city: string): any {
 
 
 function fetchWeatherApi(apiUrl: string, city: string): any {
-  const weatherFormat = '?format={"name":"%l","description":"Weather+in+%l","external_url":"https://wrlx-bucket.4everland.store/%l/weather.json","image":"%x","attributes":[{"trait_type":"timestamp","value":"%T+%Z"},{"trait_type":"city","value":"%l"},{"trait_type":"weather","value":"%C+%t"}]}';
+  const weatherFormat = '?format={"name":"%l","description":"Weather+in+%l","external_url":"https://wrlx-bucket.4everland.store/%l/weather","image":"%x","attributes":[{"trait_type":"timestamp","value":"%T+%Z"},{"trait_type":"city","value":"%l"},{"trait_type":"weather","value":"%C+%t"}]}';
   const httpUrl = `${apiUrl}${city}${weatherFormat}`;
   let headers = {
     "Content-Type": "application/json",
@@ -235,7 +235,7 @@ function updateS3Storage(city: string, metadata: string) {
   const endpoint = 'endpoint.4everland.co'
   const region = 'us-west-1'
   const bucket = 'wrlx-bucket'
-  const object_key = `${city}/weather.json`;
+  const object_key = `${city}/weather`;
   const value = uint8Array;
   const bytes = WalkerImpl.encode([
     endpoint,

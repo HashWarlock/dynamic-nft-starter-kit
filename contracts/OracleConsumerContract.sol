@@ -10,11 +10,15 @@ contract OracleConsumerContract is PhatRollupAnchor, Ownable {
     event ErrorMintFail(string err);
     event ResponseReceived(uint reqId, string reqData, string city);
     event ErrorReceived(uint reqId, string reqData, string errno);
+    event ErrorWeatherMojoCityAlreadyMinted(string city);
+    event WeatherMojoCityNftUpdated(uint reqId, string city, string nftUri);
+    event ErrorSenderNotOwnerOfCityNft(uint256 nftId, string err);
 
     uint constant TYPE_RESPONSE = 0;
     uint constant TYPE_ERROR = 2;
 
     mapping(uint => address) public requestsByUsers;
+    mapping(string => uint) mintedWeatherMojoCities;
     ITokenERC721 WeatherMojoNfts = ITokenERC721(0x494b46B3527C376d6A0A36d193ebD05dd9Ed7965);
     mapping(uint => string) requests;
     uint nextRequest = 1;
@@ -28,13 +32,32 @@ contract OracleConsumerContract is PhatRollupAnchor, Ownable {
     }
 
     function request(string memory city) public {
+        if (mintedWeatherMojoCities[city] >= 0) {
+            emit ErrorWeatherMojoCityAlreadyMinted(city);
+        } else {
+            address sender = msg.sender;
+            // assemble the request
+            uint id = nextRequest;
+            requests[id] = city;
+            requestsByUsers[id] = sender;
+            _pushMessage(abi.encode(id, city));
+            nextRequest += 1;
+        }
+    }
+
+    function updateWeather(string memory city) public {
         address sender = msg.sender;
-        // assemble the request
-        uint id = nextRequest;
-        requests[id] = city;
-        requestsByUsers[id] = sender;
-        _pushMessage(abi.encode(id, city));
-        nextRequest += 1;
+        uint nftId = mintedWeatherMojoCities[city];
+        if (sender != WeatherMojoNfts.ownerOf(nftId)) {
+            emit ErrorSenderNotOwnerOfCityNft(nftId, "sender is not owner of NFT");
+        } else {
+            // assemble the request
+            uint id = nextRequest;
+            requests[id] = city;
+            requestsByUsers[id] = sender;
+            _pushMessage(abi.encode(id, city));
+            nextRequest += 1;
+        }
     }
 
     // For test
@@ -55,17 +78,24 @@ contract OracleConsumerContract is PhatRollupAnchor, Ownable {
         if (respType == TYPE_RESPONSE) {
             emit ResponseReceived(id, requests[id], city);
             address requester = requestsByUsers[id];
-            try WeatherMojoNfts.mintTo(requester, nftUri) returns (uint256 nftId) {
+            if (mintedWeatherMojoCities[city] >= 0) {
                 emit ResponseReceived(id, requests[id], nftUri);
-                emit MintSucceeded(nftId);
+                emit WeatherMojoCityNftUpdated(id, city, nftUri);
                 delete requests[id];
                 delete requestsByUsers[id];
-            } catch Error(string memory error) {
-                emit ErrorMintFail(error);
-                delete requests[id];
-                delete requestsByUsers[id];
+            } else {
+                try WeatherMojoNfts.mintTo(requester, nftUri) returns (uint256 nftId) {
+                    emit ResponseReceived(id, requests[id], nftUri);
+                    emit MintSucceeded(nftId);
+                    mintedWeatherMojoCities[city] = nftId;
+                    delete requests[id];
+                    delete requestsByUsers[id];
+                } catch Error(string memory error) {
+                    emit ErrorMintFail(error);
+                    delete requests[id];
+                    delete requestsByUsers[id];
+                }
             }
-            delete requests[id];
         } else if (respType == TYPE_ERROR) {
             emit ErrorReceived(id, requests[id], nftUri);
             delete requests[id];

@@ -6,14 +6,14 @@ async function main() {
 
   const [deployer] = await ethers.getSigners();
 
-  const consumerSC = process.env['MUMBAI_CONSUMER_CONTRACT_ADDRESS'] || "";
+  const consumerSC = process.env['POLYGON_CONSUMER_CONTRACT_ADDRESS'] || "";
   const consumer = OracleConsumerContract.attach(consumerSC);
   await Promise.all([
     consumer.deployed(),
   ])
 
-  console.log('Pushing a request...');
-  await consumer.connect(deployer).request("MexicoCity");
+  console.log('Pushing an update...');
+  await consumer.connect(deployer).updateWeather("MexicoCity");
   console.log('Done');
 }
 

@@ -12,8 +12,8 @@ async function main() {
     consumer.deployed(),
   ])
 
-  console.log('Pushing a request...');
-  await consumer.connect(deployer).request("MexicoCity");
+  console.log('Pushing an update...');
+  await consumer.connect(deployer).updateWeather("MexicoCity");
   console.log('Done');
 }
 

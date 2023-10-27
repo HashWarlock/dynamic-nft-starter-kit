@@ -21,7 +21,7 @@ async function main() {
   console.log(`\n${finalMessage}\n`);
 
   console.log('Sending a request...');
-  await consumer.connect(deployer).request("0x01");
+  await consumer.connect(deployer).request("Dallas");
   console.log('Done');
 }
 

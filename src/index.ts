@@ -111,6 +111,7 @@ function encodeReply(reply: [number, number, string, string]): HexString {
 
 // Defined in OracleConsumerContract.sol
 const TYPE_RESPONSE = 0;
+const TYPE_UPDATE = 1;
 const TYPE_ERROR = 2;
 
 enum Error {
@@ -275,17 +276,18 @@ export default function main(request: HexString, secrets: string): HexString {
   console.log(`handle req: ${request}`);
   // Uncomment to debug the `settings` passed in from the Phat Contract UI configuration.
   // console.log(`secrets: ${settings}`);
-  let requestId, encodedReqStr;
+  let requestId, encodedReqStr, encodedReqType;
   try {
-    [requestId, encodedReqStr] = Coders.decode([uintCoder, bytesCoder], request);
+    [requestId, encodedReqStr, encodedReqType] = Coders.decode([uintCoder, bytesCoder, bytesCoder], request);
   } catch (error) {
     console.info("Malformed request received");
     return encodeReply([TYPE_ERROR, 0, "malform request", error as Error]);
   }
   const cityStr = parseReqStr(encodedReqStr as string);
+  const typeStr = parseReqStr(encodedReqType as string);
   checkCityStr(cityStr);
   console.log(`Request received for city ${cityStr}`);
-
+  console.log(`Request type ${typeStr}`);
   try {
     const resp = fetchWeatherApi("https://wttr.in/", cityStr);
     // @ts-ignore
@@ -296,10 +298,9 @@ export default function main(request: HexString, secrets: string): HexString {
     resp.image = imageURI;
     console.log(resp);
     updateS3Storage(cityStr, JSON.stringify(resp));
-    // const respData = fetchApiStats(secrets, cityStr);
-    // let stats = respData.data.profile.stats.totalPosts;
-    console.log("response:", [TYPE_RESPONSE, requestId, cityStr, nftUri]);
-    return encodeReply([TYPE_RESPONSE, requestId, cityStr, nftUri]);
+    const type = (typeStr == "mint") ? TYPE_RESPONSE : TYPE_UPDATE;
+    console.log("response:", [type, requestId, cityStr, nftUri]);
+    return encodeReply([type, requestId, cityStr, nftUri]);
   } catch (error) {
     if (error === Error.FailedToFetchData) {
       throw error;
